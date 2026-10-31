@@ -11,10 +11,16 @@
         // Register plugin in LAMPA manifest
         var manifest = {
             type: 'video',
-            version: '1.1.0',
-            name: 'WParty (Без рекламы)',
+            version: '1.2.0',
+            name: 'WParty - Без рекламы',
             description: 'Онлайн просмотр без рекламы через WParty',
             component: 'wparty',
+            onContextMenu: function (object) {
+                return {
+                    name: 'WParty',
+                    description: 'Онлайн просмотр без рекламы'
+                };
+            },
             onContextLauch: function (object) {
                 startWParty(object);
             }
@@ -37,8 +43,54 @@
             });
         } catch (e) {}
 
-        // Global AdBlock: kill all preroll / vast advertisement injections
+        // Global AdBlock & CUB Premium Bypass
         try {
+            // 1. Force developer ads to false
+            if (!window.lampa_settings) window.lampa_settings = {};
+            if (!window.lampa_settings.developer) window.lampa_settings.developer = {};
+            window.lampa_settings.developer.ads = false;
+
+            // 2. Storage hook: ensure account_user always returns an active premium date
+            if (Lampa.Storage) {
+                var origStorageGet = Lampa.Storage.get;
+                Lampa.Storage.get = function (name, def) {
+                    if (name === 'account_user') {
+                        var u = origStorageGet.call(Lampa.Storage, name, def);
+                        if (!u || typeof u !== 'object') u = {};
+                        u.id = u.id || 1;
+                        u.user_id = u.user_id || 1;
+                        u.premium = '2099-12-31';
+                        return u;
+                    }
+                    if (name === 'developer_nopremium') {
+                        return false;
+                    }
+                    return origStorageGet.call(Lampa.Storage, name, def);
+                };
+
+                // Persist premium status in storage
+                var curUser = origStorageGet.call(Lampa.Storage, 'account_user', '{}');
+                if (!curUser || typeof curUser !== 'object') curUser = {};
+                curUser.id = curUser.id || 1;
+                curUser.premium = '2099-12-31';
+                Lampa.Storage.set('account_user', curUser);
+                Lampa.Storage.set('developer_nopremium', false);
+            }
+
+            // 3. Account API hook
+            if (Lampa.Account && Lampa.Account.Api && Lampa.Account.Api.user) {
+                var origApiUser = Lampa.Account.Api.user;
+                Lampa.Account.Api.user = function (cb) {
+                    origApiUser.call(Lampa.Account.Api, function (u) {
+                        if (u && typeof u === 'object') {
+                            u.premium = '2099-12-31';
+                        }
+                        if (cb) cb(u);
+                    });
+                };
+            }
+
+            // 4. Intercept player calls: strip vast URLs from balancers
             if (Lampa.Player && Lampa.Player.play) {
                 var originalPlayerPlay = Lampa.Player.play;
                 Lampa.Player.play = function (data) {
@@ -52,7 +104,9 @@
                     return originalPlayerPlay.call(Lampa.Player, data);
                 };
             }
-        } catch (e) {}
+        } catch (e) {
+            console.error('[WParty AdBlock] Error:', e);
+        }
 
         function searchWParty(title, year, callback) {
             var cleanTitle = title.replace(/[:\/\\?*|<>&]/g, ' ').trim();
@@ -276,27 +330,29 @@
             var render = e.object.activity.render();
             if (render.find('.view--wparty').length) return;
 
-            var btn = $('<div class="full-start__button selector view--wparty" style="background: linear-gradient(90deg, #6c5ce7, #8e44ad); color: #fff; margin-right: 10px; font-weight: bold; border-radius: 6px; padding: 0 15px;"><span>WParty</span></div>');
+            var btn = $(
+                '<div class="full-start__button selector view--wparty" data-subtitle="WParty • Без рекламы">' +
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<polygon points="5 3 19 12 5 21 5 3"></polygon>' +
+                    '</svg>' +
+                    '<span>WParty</span>' +
+                '</div>'
+            );
 
             btn.on('hover:enter click', function () {
                 startWParty(e.data.movie);
             });
 
-            var playBtn = render.find('.button--play, .view--play, .full-start__button').first();
-            if (playBtn.length) {
-                playBtn.after(btn);
+            // Insert into .buttons--container so it appears exclusively inside the "Смотреть" menu
+            var torrentBtn = render.find('.view--torrent');
+            if (torrentBtn.length) {
+                torrentBtn.after(btn);
             } else {
-                var buttonsRow = render.find('.full-start-new__buttons, .full-start__buttons, .full-start-buttons');
-                if (buttonsRow.length) {
-                    buttonsRow.prepend(btn);
-                } else {
-                    render.find('.view--torrent').after(btn);
+                var buttonsContainer = render.find('.buttons--container');
+                if (buttonsContainer.length) {
+                    buttonsContainer.append(btn);
                 }
             }
-
-            try {
-                Lampa.Controller.collectionSet(render);
-            } catch (err) {}
         }
 
         Lampa.Listener.follow('full', function (e) {
