@@ -9,14 +9,49 @@
         var WPARTY_API = 'https://wparty.net/api';
 
         // Register plugin in LAMPA manifest
+        var manifest = {
+            type: 'video',
+            version: '1.1.0',
+            name: 'WParty (Без рекламы)',
+            description: 'Онлайн просмотр без рекламы через WParty',
+            component: 'wparty',
+            onContextLauch: function (object) {
+                startWParty(object);
+            }
+        };
         try {
-            Lampa.Manifest.plugins = {
-                type: 'video',
-                version: '1.0.0',
-                name: 'WParty (Без рекламы)',
-                description: 'Онлайн просмотр без рекламы через WParty',
-                component: 'wparty'
-            };
+            Lampa.Manifest.plugins = manifest;
+        } catch (e) {}
+
+        // Component stub for Sources menu
+        try {
+            Lampa.Component.add('wparty', function () {
+                this.create = function () {};
+                this.start = function () {
+                    var act = Lampa.Activity.active();
+                    if (act && act.movie) {
+                        startWParty(act.movie);
+                    }
+                };
+                this.destroy = function () {};
+            });
+        } catch (e) {}
+
+        // Global AdBlock: kill all preroll / vast advertisement injections
+        try {
+            if (Lampa.Player && Lampa.Player.play) {
+                var originalPlayerPlay = Lampa.Player.play;
+                Lampa.Player.play = function (data) {
+                    if (data) {
+                        if (data.vast_url) {
+                            console.log('[WParty AdBlock] Stripped vast_url:', data.vast_url);
+                            delete data.vast_url;
+                        }
+                        if (data.vast_msg) delete data.vast_msg;
+                    }
+                    return originalPlayerPlay.call(Lampa.Player, data);
+                };
+            }
         } catch (e) {}
 
         function searchWParty(title, year, callback) {
