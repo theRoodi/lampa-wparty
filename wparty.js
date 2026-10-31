@@ -40,7 +40,9 @@
             }, function () {
                 callback(null);
             }, JSON.stringify({ q: cleanTitle }), {
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                contentType: 'application/json; charset=UTF-8',
+                dataType: 'json'
             });
         }
 
@@ -54,7 +56,9 @@
             }, function () {
                 callback([]);
             }, JSON.stringify({ id: Number(kpId) }), {
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                contentType: 'application/json; charset=UTF-8',
+                dataType: 'json'
             });
         }
 
@@ -132,7 +136,9 @@
             }, function () {
                 callback(null);
             }, JSON.stringify({ roomType: 'public', title: 'LampaRoom' }), {
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                contentType: 'application/json; charset=UTF-8',
+                dataType: 'json'
             });
         }
 
@@ -235,9 +241,9 @@
             var render = e.object.activity.render();
             if (render.find('.view--wparty').length) return;
 
-            var btn = $('<div class="full-start__button selector view--wparty" style="background: linear-gradient(90deg, #6c5ce7, #a29bfe); color: #fff; margin-right: 10px; font-weight: bold; border-radius: 6px; padding: 0 15px;"><span>WParty</span></div>');
+            var btn = $('<div class="full-start__button selector view--wparty" style="background: linear-gradient(90deg, #6c5ce7, #8e44ad); color: #fff; margin-right: 10px; font-weight: bold; border-radius: 6px; padding: 0 15px;"><span>WParty</span></div>');
 
-            btn.on('hover:enter', function () {
+            btn.on('hover:enter click', function () {
                 startWParty(e.data.movie);
             });
 
@@ -252,6 +258,10 @@
                     render.find('.view--torrent').after(btn);
                 }
             }
+
+            try {
+                Lampa.Controller.collectionSet(render);
+            } catch (err) {}
         }
 
         Lampa.Listener.follow('full', function (e) {
