@@ -232,20 +232,69 @@
         }
 
         function buildPlayerUrl(sourceUrl, sourceName, kpId, translationId) {
+            if (!sourceUrl) return '';
+
             switch (sourceName) {
                 case 'alloha':
-                    return sourceUrl + '&kp=' + kpId + '&hidden=translation&translation=' + translationId;
-                case 'videocdn':
-                case 'lumex':
-                    return sourceUrl + '?kp_id=' + kpId + '&start_time=0';
+                    var sepA = sourceUrl.indexOf('?') !== -1 ? '&' : '?';
+                    return sourceUrl + sepA + 'kp=' + kpId + '&hidden=translation&translation=' + translationId;
+
                 case 'turbo':
+                    if (sourceUrl.indexOf('/embed/') !== -1) {
+                        return sourceUrl;
+                    }
                     return sourceUrl + '/kinopoisk/' + kpId + '?api=1';
+
                 case 'vibix':
-                    return sourceUrl + '/embed-kp/' + kpId + '?voiceover=' + translationId + '!';
+                    if (sourceUrl.indexOf('http') === 0) {
+                        return sourceUrl + '/embed-kp/' + kpId + '?voiceover=' + translationId + '!';
+                    }
+                    var html = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+                        '<style>html,body,#playerContainer,iframe{width:100% !important;height:100% !important;margin:0;padding:0;background:#000;border:none;overflow:hidden;}</style>' +
+                        '</head><body><div id="playerContainer">' +
+                        '<ins data-publisher-id="' + sourceUrl + '" data-type="kp" data-id="' + kpId + '" data-voiceover="' + translationId + '" data-voiceover-only="true" data-max-wait="3000"></ins>' +
+                        '</div><script type="text/javascript" src="https://graphicslab.io/sdk/v2/rendex-sdk.min.js"><\/script></body></html>';
+                    try {
+                        var blob = new Blob([html], { type: 'text/html' });
+                        return URL.createObjectURL(blob);
+                    } catch (e) {
+                        return 'https://vibix.org/embed-kp/' + kpId + '?voiceover=' + translationId + '!';
+                    }
+
                 case 'kodik':
                     return sourceUrl + '/find-player?kinopoiskID=' + kpId + '&translations=false&onlyTranslationID=[' + translationId + ']';
+
+                case 'videocdn':
+                case 'lumex':
+                    var sepV = sourceUrl.indexOf('?') !== -1 ? '&' : '?';
+                    return sourceUrl + sepV + 'kp_id=' + kpId + '&start_time=0';
+
                 default:
-                    return sourceUrl + '?kp_id=' + kpId + '&start_time=0&translation=' + translationId;
+                    var sepD = sourceUrl.indexOf('?') !== -1 ? '&' : '?';
+                    return sourceUrl + sepD + 'kp_id=' + kpId + '&start_time=0&translation=' + translationId;
+            }
+        }
+
+        function playInIframe(streamUrl, title) {
+            if (Lampa.Iframe && Lampa.Iframe.show) {
+                var iframeEl = Lampa.Iframe.render().find('iframe');
+                iframeEl.attr('allow', 'autoplay *; fullscreen *; encrypted-media *; picture-in-picture *');
+                iframeEl.attr('allowfullscreen', 'true');
+                iframeEl.attr('webkitallowfullscreen', 'true');
+                iframeEl.attr('mozallowfullscreen', 'true');
+                iframeEl.attr('referrerpolicy', 'no-referrer-when-downgrade');
+
+                Lampa.Iframe.show({
+                    url: streamUrl,
+                    onBack: function () {
+                        Lampa.Controller.toggle('content');
+                    }
+                });
+            } else {
+                Lampa.Player.play({
+                    title: title,
+                    url: streamUrl
+                });
             }
         }
 
@@ -310,10 +359,7 @@
                                     return;
                                 }
 
-                                Lampa.Player.play({
-                                    title: title + ' - ' + selected.title,
-                                    url: streamUrl
-                                });
+                                playInIframe(streamUrl, title + ' - ' + selected.title);
                             });
                         },
                         onBack: function () {
@@ -343,14 +389,17 @@
                 startWParty(e.data.movie);
             });
 
-            // Insert into .buttons--container so it appears exclusively inside the "Смотреть" menu
-            var torrentBtn = render.find('.view--torrent');
-            if (torrentBtn.length) {
-                torrentBtn.after(btn);
-            } else {
-                var buttonsContainer = render.find('.buttons--container');
-                if (buttonsContainer.length) {
+            // Insert strictly into .buttons--container so it appears exclusively inside the "Смотреть" menu
+            var buttonsContainer = render.find('.buttons--container');
+            if (buttonsContainer.length) {
+                var torrentBtn = buttonsContainer.find('.view--torrent');
+                if (torrentBtn.length) {
+                    torrentBtn.after(btn);
+                } else {
                     buttonsContainer.append(btn);
+                }
+                if (e.object && e.object.activity && e.object.activity.emit) {
+                    e.object.activity.emit('groupButtons');
                 }
             }
         }
