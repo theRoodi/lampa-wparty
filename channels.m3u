@@ -1,4 +1,4 @@
 #EXTM3U url-tvg="http://epg.it999.ru/edem.xml.gz"
 
-#EXTINF:-1 tvg-id="TNT.ru@HD" tvg-name="ТНТ" tvg-logo="https://i.imgur.com/T4A6rEI.png" group-title="Федеральные",ТНТ HD
-https://bl.rutube.ru/livestream/f02b63bc8f0ed4dba04bbfce4a1119c5/index.m3u8?s=QKO7EStxqzrX_A0o0p6PNA&e=2094148005&scheme=https
+#EXTINF:-1 tvg-id="TNT.ru@SD" tvg-name="ТНТ" tvg-logo="https://i.imgur.com/T4A6rEI.png" group-title="Федеральные",ТНТ
+http://31.148.5.241/kanal_19/index.m3u8
