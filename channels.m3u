@@ -1,6 +1,7 @@
 #EXTM3U url-tvg="http://epg.it999.ru/edem.xml.gz"
 
-#EXTINF:-1 tvg-id="TNT.ru@+4" tvg-name="ТНТ (+4)" tvg-logo="https://i.imgur.com/T4A6rEI.png" group-title="Федеральные",ТНТ (+4 Сибирь UTC+7)
-http://176.118.197.101/THT/index.m3u8
+#EXTINF:-1 tvg-id="3023" tvg-name="ТНТ (+4)" tvg-logo="https://i.imgur.com/T4A6rEI.png" group-title="Федеральные",ТНТ (+4 Сибирь UTC+7)
+https://zabava-htlive.cdn.ngenix.net/hls/CH_TNT_4/variant.m3u8
 
-
+#EXTINF:-1 tvg-id="353" tvg-name="ТНТ" tvg-logo="https://i.imgur.com/T4A6rEI.png" group-title="Федеральные",ТНТ (Москва UTC+3)
+https://zabava-htlive.cdn.ngenix.net/hls/CH_TNT/variant.m3u8
